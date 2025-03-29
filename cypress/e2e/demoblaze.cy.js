@@ -9,7 +9,7 @@ describe('Demoblaze E2E Tests', () => {
     cy.visit(baseUrl);
   });
 
-  it.skip('should create an account, login, add products, validate amounts, delete a product, and place an order', () => {
+  it('should create an account, login, add products, validate amounts, delete a product, and place an order', () => {
     // CREATE AN ACCOUNT
     cy.get('#navbarExample').should('be.visible'); // We need to make sure that the parent element is visible/rendered for the following actions
     cy.get('#signin2').click();
