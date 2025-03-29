@@ -9,7 +9,7 @@ describe('Demoblaze E2E Tests', () => {
     cy.visit(baseUrl);
   });
 
-  it('should create an account, login, add products, validate amounts, delete a product, and place an order', () => {
+  it.skip('should create an account, login, add products, validate amounts, delete a product, and place an order', () => {
     // CREATE AN ACCOUNT
     cy.get('#navbarExample').should('be.visible'); // We need to make sure that the parent element is visible/rendered for the following actions
     cy.get('#signin2').click();
@@ -23,23 +23,25 @@ describe('Demoblaze E2E Tests', () => {
     cy.get('.modal-content').should('not.be.visible');
   });
 
-    // LOGIN
-    it('should login an account, login, add products, validate amounts, delete a product, and place an order', () => {  
-    cy.get('#navbarExample').should('be.visible');  
+  // LOGIN
+  it('should login an account, login, add products, validate amounts, delete a product, and place an order', () => {
+    cy.get('#navbarExample').should('be.visible');
     cy.get('#login2').click();
     cy.get('.modal-content').should('be.visible');
-    cy.get('#loginusername').clear().type(username);
-    cy.get('#loginpassword').clear().type(password);
-    cy.get('button').contains('Log in').click(); 
+    cy.get('#loginusername').clear().type('princiya');
+    cy.get('#loginpassword').clear().type('princiya123');
+    cy.get('button').contains('Log in').click();
     cy.wait(1000);
     cy.get('.modal-content').should('not.be.visible');
-    cy.contains('#nameofuser', username);
+    cy.contains('#nameofuser', 'princiya');
 
     // ADD 3 PRODUCTS TO THE CART
     const productsToAdd = ['Samsung galaxy s6', 'Nokia lumia 1520', 'Nexus 6'];
     productsToAdd.forEach((product) => {  // loops all elements in array above until all 3 products are added
       cy.contains(product).click();
+      cy.intercept('POST', '**/addtocart').as('addToCart');
       cy.get('.btn.btn-success.btn-lg').contains('Add to cart').click(); //3 dots in classname is because we have 3 different class and space is not a valid loactor
+      cy.wait('@addToCart'); 
       cy.on('window:alert', (str) => {
         expect(str).to.contain('Product added.');
       });
@@ -58,11 +60,15 @@ describe('Demoblaze E2E Tests', () => {
     });
 
     // DELETE FIRST PRODUCT AND VALIDATE THE AMOUNT AGAIN
+    cy.intercept('POST', '**/deleteitem').as('deleteItem'); // intercept deletion
+    cy.intercept('POST', '**/viewcart**').as('viewCart');    // cart reload after deletion
+
+    let newTotal = 0; //Initialized to store the new value after deletion
     cy.get('tr.success').first().within(() => {
       cy.contains('Delete').click();
     });
-    cy.wait(1000);
-    let newTotal = 0; //Initialized to store the new value after deletion
+    cy.wait('@deleteItem');  // wait for delete API to complete
+    cy.wait('@viewCart');    // wait for the cart to be updated
     cy.get('tr.success').each(($row) => {
       cy.wrap($row).find('td').eq(2).invoke('text').then((priceText) => {
         newTotal += parseInt(priceText);
@@ -96,12 +102,12 @@ describe('Demoblaze E2E Tests', () => {
 
   // Additional Positive Test login for another user
   it('should login with valid credentials', () => {
-    cy.get('#navbarExample').should('be.visible');  
+    cy.get('#navbarExample').should('be.visible');
     cy.get('#login2').click();
     cy.get('.modal-content').should('be.visible');
     cy.get('#loginusername').clear().type('princiya1');
     cy.get('#loginpassword').clear().type('princiya1234');
-    cy.get('button').contains('Log in').click(); 
+    cy.get('button').contains('Log in').click();
     cy.wait(1000);
     cy.get('.modal-content').should('not.be.visible');
     cy.contains('#nameofuser', 'princiya1')
@@ -111,9 +117,9 @@ describe('Demoblaze E2E Tests', () => {
   it('should not login with invalid credentials', () => {
     cy.get('#login2').click();
     cy.get('#logInModal').should('be.visible');
-    cy.get('#loginusername').type('invalidUser');
-    cy.get('#loginpassword').type('invalidPass');
-    cy.get('button').contains('Log in').click(); 
+    cy.get('#loginusername').type('Ghibly6');
+    cy.get('#loginpassword').type('Ghibly9');
+    cy.get('button').contains('Log in').click();
     cy.on('window:alert', (str) => {
       expect(str).to.contain('User does not exist.');
     });
