@@ -28,12 +28,12 @@ describe('Demoblaze E2E Tests', () => {
     cy.get('#navbarExample').should('be.visible');
     cy.get('#login2').click();
     cy.get('.modal-content').should('be.visible');
-    cy.get('#loginusername').clear().type('princiya');
-    cy.get('#loginpassword').clear().type('princiya123');
+    cy.get('#loginusername').clear().type(username);
+    cy.get('#loginpassword').clear().type(password);
     cy.get('button').contains('Log in').click();
     cy.wait(1000);
     cy.get('.modal-content').should('not.be.visible');
-    cy.contains('#nameofuser', 'princiya');
+    cy.contains('#nameofuser', username);
 
     // ADD 3 PRODUCTS TO THE CART
     const productsToAdd = ['Samsung galaxy s6', 'Nokia lumia 1520', 'Nexus 6'];
@@ -74,7 +74,8 @@ describe('Demoblaze E2E Tests', () => {
         newTotal += parseInt(priceText);
       });
     }).then(() => {
-      expect(newTotal).to.be.lessThan(initialTotal); //validating new value to be less than tht total before deleting
+      expect(newTotal < initialTotal).to.be.true;
+      //expect(newTotal).to.be.lessThan(initialTotal); //validating new value to be less than tht total before deleting
       cy.get('#totalp').should('have.text', `${newTotal}`);
     });
 
