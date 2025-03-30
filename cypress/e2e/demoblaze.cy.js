@@ -48,36 +48,66 @@ describe('Demoblaze E2E Tests', () => {
       cy.get('#nava').contains('PRODUCT STORE').click();
     });
 
-    // VALIDATE TOTAL
-    cy.contains('Cart').click();
-    let initialTotal = 0;
-    cy.get('tr.success').each(($row) => {
-      cy.wrap($row).find('td').eq(2).invoke('text').then((priceText) => { //invoke for exact text
-        initialTotal += parseInt(priceText); // initialTotal will have the value new value and keeps adding as new product value is calculated
-      });
-    }).then(() => {
-      cy.get('#totalp').should('have.text', `${initialTotal}`); //getting the exact value in the total
-    });
+    // ---- STEP 1: Validate initial total and capture first item price ----
+cy.contains('Cart').click();
 
-    // DELETE FIRST PRODUCT AND VALIDATE THE AMOUNT AGAIN
-    cy.intercept('POST', '**/deleteitem').as('deleteItem'); // intercept deletion
-    cy.intercept('POST', '**/viewcart**').as('viewCart');    // cart reload after deletion
+cy.get('tr.success').then(($rows) => {
+  // Map each row to its price value
+  const pricesBefore = Cypress._.map($rows, (row) => {
+    return parseInt(Cypress.$(row).find('td').eq(2).text());
+  });
+  const initialTotal = pricesBefore.reduce((acc, price) => acc + price, 0);
+  const deletedPrice = pricesBefore[0]; // Price of the first (to be deleted) item
+  
+  // Log for debugging
+  cy.log(`Initial Total: ${initialTotal}`);
+  cy.log(`Deleted Item Price: ${deletedPrice}`);
+  
+  // Validate displayed total matches calculated total
+  cy.get('#totalp').should('have.text', `${initialTotal}`);
+  
+  // Save values as aliases
+  cy.wrap(initialTotal).as('initialTotal');
+  cy.wrap(deletedPrice).as('deletedPrice');
+});
 
-    let newTotal = 0; //Initialized to store the new value after deletion
-    cy.get('tr.success').first().within(() => {
-      cy.contains('Delete').click();
+// ---- STEP 2: Delete first product and wait for updates ----
+cy.intercept('POST', '**/deleteitem').as('deleteItem');
+cy.intercept('POST', '**/viewcart**').as('viewCart');
+
+cy.get('tr.success').first().within(() => {
+  cy.contains('Delete').click();
+});
+
+cy.wait('@deleteItem');
+cy.wait('@viewCart');
+
+// ---- STEP 3: Recalculate updated total after deletion ----
+cy.get('tr.success').then(($rowsAfter) => {
+  const pricesAfter = Cypress._.map($rowsAfter, (row) => {
+    return parseInt(Cypress.$(row).find('td').eq(2).text());
+  });
+  const updatedTotal = pricesAfter.reduce((acc, price) => acc + price, 0);
+  
+  cy.log(`Updated Total: ${updatedTotal}`);
+  
+  // Validate displayed total equals updatedTotal
+  cy.get('#totalp').should('have.text', `${updatedTotal}`);
+  
+  // Save updatedTotal as alias
+  cy.wrap(updatedTotal).as('updatedTotal');
+});
+
+// ---- STEP 4: Compare totals to ensure the difference equals the deleted item price ----
+cy.get('@initialTotal').then((initialTotal) => {
+  cy.get('@updatedTotal').then((updatedTotal) => {
+    cy.get('@deletedPrice').then((deletedPrice) => {
+      cy.log(`Initial Total: ${initialTotal}, Updated Total: ${updatedTotal}, Deleted Price: ${deletedPrice}`);
+      expect(initialTotal - updatedTotal).to.equal(deletedPrice);
     });
-    cy.wait('@deleteItem');  // wait for delete API to complete
-    cy.wait('@viewCart');    // wait for the cart to be updated
-    cy.get('tr.success').each(($row) => {
-      cy.wrap($row).find('td').eq(2).invoke('text').then((priceText) => {
-        newTotal += parseInt(priceText);
-      });
-    }).then(() => {
-      expect(newTotal < initialTotal).to.be.true;
-      //expect(newTotal).to.be.lessThan(initialTotal); //validating new value to be less than tht total before deleting
-      cy.get('#totalp').should('have.text', `${newTotal}`);
-    });
+  });
+});
+
 
     // PLACE THE ORDER
     cy.contains('Place Order').click();
