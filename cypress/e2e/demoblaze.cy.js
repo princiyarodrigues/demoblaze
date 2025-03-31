@@ -12,7 +12,7 @@ describe('Demoblaze E2E Tests', () => {
     const password = 'Test@123';
     cy.get('#navbarExample').should('be.visible'); // We need to make sure that the parent element is visible/rendered for the following actions
     cy.get('#signin2').click();
-    cy.wait(2000)
+    cy.wait(2000) // Wait for the modal to appear
     cy.get('.modal-content').should('be.visible');
     cy.get('#sign-username').clear().type(username); //.clear is added to clear the existing data in the placeholder
     cy.get('#sign-password').clear().type(password);
@@ -21,37 +21,37 @@ describe('Demoblaze E2E Tests', () => {
   
   // LOGIN
     cy.wait(2000)
-    cy.get('#navbarExample').should('be.visible');
+    cy.get('#navbarExample').should('be.visible'); 
     cy.get('#login2').click();
     cy.get('.modal-content').should('be.visible');
     cy.wait(2000)
     cy.get('#loginusername').clear().type(username);
     cy.get('#loginpassword').clear().type(password);
     cy.get('button').contains('Log in').click();
-    cy.contains('#nameofuser', username);
+    cy.contains('#nameofuser', username); // Verify that the logged-in username is displayed
   
     // ADD 3 PRODUCTS TO THE CART
-    const productsToAdd = ['Samsung galaxy s6', 'Nokia lumia 1520', 'Nexus 6'];
+    const productsToAdd = ['Samsung galaxy s6', 'Nokia lumia 1520', 'Nexus 6']; // List of products to add to cart
     productsToAdd.forEach((product) => {  // loops all elements in array above until all 3 products are added
       cy.contains(product).click();
-      cy.intercept('POST', '**/addtocart').as('addToCart');
+      cy.intercept('POST', '**/addtocart').as('addToCart'); // Intercept the POST request to add a product to the cart
       cy.wait(2000)
-      cy.get('.btn.btn-success.btn-lg').contains('Add to cart').click(); //3 dots in classname is because we have 3 different class and space is not a valid loactor
-      cy.wait('@addToCart'); 
-      cy.wait(2000)
+      cy.get('.btn.btn-success.btn-lg').contains('Add to cart').click(); //3 dots in classname is because we have 3 different class and space is not a valid locator
+      cy.wait('@addToCart'); // Wait for the "add to cart" API request to complete
+      cy.wait(2000) // Wait for the page to update
       cy.get('#nava').contains('PRODUCT STORE').click();
     });
 
     // VALIDATE TOTAL
     cy.contains('Cart').click();
-    cy.wait(2000)
-    const expectedTotalAfterAdd = 1830;
-    const expectedTotalAfterDelete = 1470;
+    cy.wait(2000) // Wait for the cart page to load
+    const expectedTotalAfterAdd = 1830; // Expected total after adding products
+    const expectedTotalAfterDelete = 1470; // Expected total after deleting a product
 
-    let actualTotalAfterAdd = 0;
-    let actualTotalAfterDelete = 0;
+    let actualTotalAfterAdd = 0; // Initialize actual total after adding products
+    let actualTotalAfterDelete = 0; // Initialize actual total after deleting a product
 
-    cy.get('tr.success').each(($row) => {
+    cy.get('tr.success').each(($row) => { // Loop through each row in the cart
       cy.wrap($row).find('td').eq(2).invoke('text').then((priceText) => { //invoke for exact text
         actualTotalAfterAdd += parseInt(priceText); // initialTotal will have the value new value and keeps adding as new product value is calculated
       });
@@ -70,7 +70,7 @@ describe('Demoblaze E2E Tests', () => {
     cy.intercept('POST', '**/deleteitem').as('deleteItem'); // intercept deletion
     cy.intercept('POST', '**/viewcart**').as('viewCart');    // cart reload after deletion
 
-    cy.get('tr.success').contains('Samsung galaxy s6').closest('tr').contains('Delete').click()
+    cy.get('tr.success').contains('Samsung galaxy s6').closest('tr').contains('Delete').click()  // Delete a product from the cart
     cy.wait('@deleteItem');  // wait for delete API to complete
     cy.wait('@viewCart');    // wait for the cart to be updated
     cy.wait(2000)
@@ -79,7 +79,7 @@ describe('Demoblaze E2E Tests', () => {
         actualTotalAfterDelete += parseInt(priceText);
       });
     }).then(() => {
-      expect(actualTotalAfterDelete).to.equal(expectedTotalAfterDelete);//
+      expect(actualTotalAfterDelete).to.equal(expectedTotalAfterDelete); // Verify that the total after deletion matches the expected value
       cy.get('#totalp').should('have.text', `${expectedTotalAfterDelete}`);
     });
 
@@ -122,13 +122,13 @@ describe('Demoblaze E2E Tests', () => {
   it('should not login with invalid credentials', () => {
     cy.get('#login2').click();
     cy.get('#logInModal').should('be.visible');
-    cy.get('#loginusername').type('Ghibly6');
-    cy.get('#loginpassword').type('Ghibly9');
+    cy.get('#loginusername').type('Ghibly6'); // Type an invalid username
+    cy.get('#loginpassword').type('Ghibly9'); // Type an invalid password
     cy.get('button').contains('Log in').click();
     cy.on('window:alert', (str) => {
       expect(str).to.contain('User does not exist.');
     });
-    cy.contains('Welcome').should('not.exist');
+    cy.contains('Welcome').should('not.exist'); // Ensure that the "Welcome" message does not appear
   });
 
   // Negative Test: Place order with empty cart
@@ -139,7 +139,7 @@ describe('Demoblaze E2E Tests', () => {
     cy.contains('Place Order').click();
     cy.get('#orderModal').should('be.visible');
     cy.on('window:alert', (str) => {
-      expect(str).to.contain('Please fill out Name and Creditcard.');
+      expect(str).to.contain('Please fill out Name and Creditcard.'); // Verify that the alert contains the appropriate message
     });
   });
 });
