@@ -1,39 +1,33 @@
 // cypress/integration/demoblaze.spec.js
-
 describe('Demoblaze E2E Tests', () => {
   const baseUrl = 'https://www.demoblaze.com/index.html';
-  const username = `user${Date.now()}`; // Unique username or else the web page does not allow to create duplicate usernames
-  const password = 'Test@123';
 
   beforeEach(() => {
     cy.visit(baseUrl);
   });
-
+ 
   it('should create an account, login, add products, validate amounts, delete a product, and place an order', () => {
     // CREATE AN ACCOUNT
+    const username = `user${Date.now()}`; // Unique username or else the web page does not allow to create duplicate usernames
+    const password = 'Test@123';
     cy.get('#navbarExample').should('be.visible'); // We need to make sure that the parent element is visible/rendered for the following actions
     cy.get('#signin2').click();
-    cy.wait(3000)
+    cy.wait(2000)
     cy.get('.modal-content').should('be.visible');
     cy.get('#sign-username').clear().type(username); //.clear is added to clear the existing data in the placeholder
     cy.get('#sign-password').clear().type(password);
     cy.get('button').contains('Sign up').click(); //using contains because of no unique locator
-    // cy.on('window:alert', (str) => {
-    //   expect(str).to.contain('Sign up successful.');
-    // });
+ 
   
-
   // LOGIN
-  
+    cy.wait(2000)
     cy.get('#navbarExample').should('be.visible');
     cy.get('#login2').click();
     cy.get('.modal-content').should('be.visible');
-    cy.wait(3000)
-    cy.get('#loginusername').clear().type(username,{ delay: 200 });
-    cy.get('#loginpassword').clear().type(password,{ delay: 200 });
+    cy.wait(2000)
+    cy.get('#loginusername').clear().type(username);
+    cy.get('#loginpassword').clear().type(password);
     cy.get('button').contains('Log in').click();
-    // cy.wait(1000);
-    // cy.get('.modal-content').should('not.be.visible');
     cy.contains('#nameofuser', username);
   
     // ADD 3 PRODUCTS TO THE CART
@@ -41,18 +35,16 @@ describe('Demoblaze E2E Tests', () => {
     productsToAdd.forEach((product) => {  // loops all elements in array above until all 3 products are added
       cy.contains(product).click();
       cy.intercept('POST', '**/addtocart').as('addToCart');
+      cy.wait(2000)
       cy.get('.btn.btn-success.btn-lg').contains('Add to cart').click(); //3 dots in classname is because we have 3 different class and space is not a valid loactor
       cy.wait('@addToCart'); 
       cy.wait(2000)
-      // cy.on('window:alert', (str1) => {
-      //   expect(str1).to.contain('Product added.');
-      // });
       cy.get('#nava').contains('PRODUCT STORE').click();
     });
 
     // VALIDATE TOTAL
     cy.contains('Cart').click();
-    cy.wait(3000)
+    cy.wait(2000)
     const expectedTotalAfterAdd = 1830;
     const expectedTotalAfterDelete = 1470;
 
@@ -81,6 +73,7 @@ describe('Demoblaze E2E Tests', () => {
     cy.get('tr.success').contains('Samsung galaxy s6').closest('tr').contains('Delete').click()
     cy.wait('@deleteItem');  // wait for delete API to complete
     cy.wait('@viewCart');    // wait for the cart to be updated
+    cy.wait(2000)
     cy.get('tr.success').each(($row) => {
       cy.wrap($row).find('td').eq(2).invoke('text').then((priceText) => {
         actualTotalAfterDelete += parseInt(priceText);
@@ -110,6 +103,7 @@ describe('Demoblaze E2E Tests', () => {
       .then(() => {
         cy.contains('OK').click();
       });
+
   });
 
   // Additional Positive Test login for another user
@@ -149,5 +143,3 @@ describe('Demoblaze E2E Tests', () => {
     });
   });
 });
-// cy.get('#sign-username').type(Cypress.env('USER_NAME'));
-// cy.get('#sign-password').type(Cypress.env('PASSWORD'));
